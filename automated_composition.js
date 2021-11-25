@@ -8,12 +8,14 @@ var markovChain;
 var order = 1;
 
 var trainingNotes = TWINKLE_TWINKLE;
+const SEQUENCE_LENGTH = newNotes.length;
+const NOTE_LENGTH = 1;
 
 const playButton = document.getElementById("play");
 playButton.addEventListener('click', function () {
     setupWebAudio();
     makeMarkovChain(trainingNotes);
-    let noteList = genNotes();
+    let noteList = genNotes(trainingNotes);
     playNotes(noteList);
 }, false);
 
@@ -26,25 +28,19 @@ function playNotes(noteList) {
     });
 }
 
-function genNotes() {
-    var noteList = [{ pitch: 60, startTime: 0, endTime: 0.9 }]
+function genNotes(noteList) {
+    let newNotes = copyNoteList(noteList);
 
-    for (let i = 1; i < 15; i++) {
-        var newNote = JSON.parse(JSON.stringify(noteList[i - 1]));
-        console.log(newNote)
-        if (Math.random() < 0.7) {
-            newNote.pitch += 1;
-        }
-        else {
-            newNote.pitch -= 1;
-        }
-        newNote.startTime += 1;
-        newNote.endTime += 1;
+    for (let i = newNotes.length; i < newNotes.length + SEQUENCE_LENGTH; i++) {
+        let newNote = copyNote(newNotes, i);
+        newNote.pitch = getNextNote(newNote.pitch);
+        newNote.startTime = newNote.endTime;
+        newNote.endTime = newNote.startTime + NOTE_LENGTH;
         const newNoteCopy = newNote;
         noteList.push(newNoteCopy);
     }
-    console.log(noteList)
 
+    console.log(newNotes);
     return noteList;
 }
 
@@ -90,17 +86,17 @@ function makeMarkovChainOrder1() {
 function getStates(noteList) {
     states = {};
 
-    let noteSet = [];
+    let pitchSet = [];
     noteList.notes.forEach(note => {
-        if (!noteSet.contains(note)) {
-            noteSet.push(note.pitch);
+        if (!pitchSet.contains(note)) {
+            pitchSet.push(note.pitch);
         }
     });
-    noteSet.sort();
+    pitchSet.sort();
 
     let i = 0;
-    noteSet.forEach(note => {
-        states[note] = i;
+    pitchSet.forEach(pitch => {
+        states[pitch] = i;
         i++;
     });
 }
@@ -110,14 +106,40 @@ function getNGramCounts(noteList) {
     bigram_counts = math.zeros(states.length, states.length);
     i = 0;
     for (; i < states.length - 1; i++) {
-        curr_note = states[noteList.notes[i]];
-        next_note = states[noteList.notes[i + 1]];
+        curr_note = states[noteList.notes[i].pitch];
+        next_note = states[noteList.notes[i + 1].pitch];
         unigram_counts[curr_note]++;
         bigram_counts[curr_note][next_note]++;
     }
-    curr_note = states[noteList.notes[i]];
+    curr_note = states[noteList.notes[i].pitch];
     unigram_counts[curr_note]++;
     return [unigram: unigram_counts, bigram: bigram_counts]
+}
+
+function getNextNote(pitch) {
+    randomNote = Math.random();
+    probSum = 0;
+    currNote = 0;
+    while (probSum + markovChain[states[pitch]] < randomNote) {
+        probSum += markovChain[states[pitch]];
+        currNote++;
+    }
+    return Object.keys(states)[currNote];
+}
+
+function copyNoteList(noteList) {
+    let notesCopy = [];
+    noteList.forEach(note => {
+        console.log(note);
+        notesCopy.push(note);
+    });
+    return notesCopy;
+}
+
+function copyNote(noteList, i) {
+    let noteCopy = JSON.parse(JSON.stringify(noteList[i - 1]));
+    console.log(noteCopy);
+    return notecopy;
 }
 
 function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
