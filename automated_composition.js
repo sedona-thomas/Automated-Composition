@@ -1,3 +1,5 @@
+import { zeros, identity, multiply } from 'mathjs'
+
 var audioCtx;
 var osc;
 var gainNode;
