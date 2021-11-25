@@ -1,6 +1,7 @@
 var audioCtx;
 var osc;
 var gainNode;
+var offset = 1;
 
 var states;
 var markovChain_order1;
@@ -30,6 +31,18 @@ TWINKLE_TWINKLE = {
 var trainingNotes = TWINKLE_TWINKLE;
 const SEQUENCE_LENGTH = 15;
 const NOTE_LENGTH = 1;
+
+let activeOscillators = {}
+let activeGainNodes = {}
+let mode = 'single';
+let waveform = 'sine';
+let lfo = false;
+
+let numberOfPartials = 5;
+let partialDistance = 15;
+let modulatorFrequencyValue = 100;
+let modulationIndexValue = 100;
+let lfoFreq = 2;
 
 const playButton = document.getElementById("play");
 playButton.addEventListener('click', function () {
@@ -69,20 +82,39 @@ function makeMarkovChain(noteList) {
 function setUpWebAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext);
-        osc = audioCtx.createOscillator();
-        gainNode = audioCtx.createGain();
-        osc.connect(gainNode).connect(audioCtx.destination);
-        osc.start();
-        gainNode.gain.value = 0;
+        // osc = audioCtx.createOscillator();
+        // gainNode = audioCtx.createGain();
+        // osc.connect(gainNode).connect(audioCtx.destination);
+        // osc.start();
+        // gainNode.gain.value = 0;
     }
 }
 
 function playNote(note) {
-    gainNode.gain.setTargetAtTime(1, note.startTime, 0.01);
-    osc.frequency.setTargetAtTime(midiToFreq(note.pitch), note.startTime, 0.001);
-    space = (0.01 < note.endTime - note.startTime) ? 0.01 : note.endTime - note.startTime / 5;
-    gainNode.gain.setTargetAtTime(0, note.endTime - space, 0.01);
+    if (mode == "single") {
+        playNoteSingle(note);
+    }
+    else if (mode == "additive") {
+        playNoteAdditive(note);
+    }
+    else if (mode == "am") {
+        playNoteAM(note);
+    }
+    else if (mode == "fm") {
+        playNoteFM(note);
+    }
+
+    if (activeOscillators[note]) {
+        stopNote(note);
+    }
 }
+
+// function playNote(note) {
+//     gainNode.gain.setTargetAtTime(1, note.startTime, 0.01);
+//     osc.frequency.setTargetAtTime(midiToFreq(note.pitch), note.startTime, 0.001);
+//     space = (0.01 < note.endTime - note.startTime) ? 0.01 : note.endTime - note.startTime / 5;
+//     gainNode.gain.setTargetAtTime(0, note.endTime - space, 0.01);
+// }
 
 function makeMarkovChainOrderN() {
     markovChain = makeIdentityMatrix(Object.keys(states).length);
@@ -196,6 +228,207 @@ function makeIdentityMatrix(size) {
     return m;
 }
 
+function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
+
 function updateOrder(value) { order = value; };
 function updateTrainingNotes(value) { trainingNotes = blobToNoteSequence(value); }
-function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
+function updatePartialNum(value) { numberOfPartials = value; };
+function updatePartialDistance(value) { partialSize = value; };
+function updateFreq(value) { modulatorFrequencyValue = value; };
+function updateIndex(value) { modulationIndexValue = value; };
+function updateLfo(value) { lfoFreq = value; };
+
+// buttons to switch modes
+const singleButton = document.getElementById("single");
+singleButton.addEventListener('click', function () { mode = 'single'; }, false);
+const additiveButton = document.getElementById("additive");
+additiveButton.addEventListener('click', function () { mode = 'additive'; }, false);
+const AMButton = document.getElementById("am");
+AMButton.addEventListener('click', function () { mode = 'am'; }, false);
+const FMButton = document.getElementById("fm");
+FMButton.addEventListener('click', function () { mode = 'fm'; }, false);
+
+// buttons to switch between each waveform
+const sineButton = document.getElementById("sine");
+sineButton.addEventListener('click', function () { waveform = 'sine'; }, false);
+const sawtoothButton = document.getElementById("sawtooth");
+sawtoothButton.addEventListener('click', function () { waveform = 'sawtooth'; }, false);
+const squareButton = document.getElementById("square");
+squareButton.addEventListener('click', function () { waveform = 'square'; }, false);
+const triangleButton = document.getElementById("triangle");
+triangleButton.addEventListener('click', function () { waveform = 'triangle'; }, false);
+
+// buttons to turn on and off lfo
+const lfoOnButton = document.getElementById("lfoOn");
+lfoOnButton.addEventListener('click', function () { lfo = true; }, false);
+const lfoOffButton = document.getElementById("lfoOff");
+lfoOffButton.addEventListener('click', function () { lfo = false; }, false);
+
+function playNoteSingle(note) {
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+
+    // create oscillator and connect to gain node
+    const osc = audioCtx.createOscillator();
+    osc.frequency.setValueAtTime(midiToFreq(note.pitch), audioCtx.currentTime);
+    osc.type = waveform;
+    osc.connect(gainNode).connect(audioCtx.destination);
+    osc.start();
+
+    // saves current gain node and oscillator
+    activeGainNodes[note] = [gainNode];
+    activeOscillators[note] = [osc];
+
+    if (lfo) {
+        let lfo = audioCtx.createOscillator();
+        lfo.frequency.value = lfoFreq;
+        let lfoGain = audioCtx.createGain();
+        lfoGain.gain.value = 10;
+        lfo.connect(lfoGain).connect(osc.frequency);
+        lfo.start();
+        activeOscillators[note].push(lfo);
+    }
+
+    // attack (keeps total of gain nodes less than 1)
+    let gainNodes = Object.keys(activeGainNodes).length;
+    gainNode.gain.setTargetAtTime(0.8 / gainNodes, note.startTime + offset, 0.01);
+}
+
+function playNoteAdditive(note) {
+    // saves current gain node and oscillator
+    activeGainNodes[note] = [];
+    activeOscillators[note] = [];
+
+    for (let i = 0; i < numberOfPartials; i++) {
+        // create gain node and initialize as 0
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+
+        // create oscillator and connect to gain node
+        const osc = audioCtx.createOscillator();
+        let freq = midiToFreq(note.pitch) * (i + 1);
+        freq += ((i % 2) * -1) * (i + 1) * partialDistance * Math.random();
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.type = waveform;
+        osc.connect(gainNode).connect(audioCtx.destination);
+        osc.start();
+        activeGainNodes[note].push(gainNode);
+        activeOscillators[note].push(osc);
+
+        if (lfo) {
+            let lfo = audioCtx.createOscillator();
+            lfo.frequency.value = lfoFreq;
+            let lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 10;
+            lfo.connect(lfoGain).connect(osc.frequency);
+            lfo.start();
+            activeOscillators[note].push(lfo);
+        }
+    }
+
+    // attack (keeps total of gain nodes less than 1)
+    let gainNodes = Object.keys(activeGainNodes).length * numberOfPartials;
+    for (let i = 0; i < activeGainNodes[note].length; i++) {
+        activeGainNodes[note][i].gain.setTargetAtTime(0.8 / gainNodes, note.startTime + offset, 0.1);
+    }
+}
+
+function playNoteAM(note) {
+    let carrier = audioCtx.createOscillator();
+    let modulatorFreq = audioCtx.createOscillator();
+    carrier.type = waveform;
+    carrier.frequency.setValueAtTime(midiToFreq(note.pitch), audioCtx.currentTime);
+    modulatorFreq.frequency.value = modulatorFrequencyValue;
+
+    const modulated = audioCtx.createGain();
+    const depth = audioCtx.createGain();
+    depth.gain.value = 0.5; //scale modulator output to [-0.5, 0.5]
+    modulated.gain.value = 1.0 - depth.gain.value; //a fixed value of 0.5
+
+    // create gain node and initialize as 0
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+
+    modulatorFreq.connect(depth).connect(modulated.gain);
+    carrier.connect(modulated);
+    modulated.connect(gainNode).connect(audioCtx.destination);
+
+    carrier.start();
+    modulatorFreq.start();
+
+    // saves current gain node and oscillator
+    activeGainNodes[note] = [gainNode, modulated, depth];
+    activeOscillators[note] = [carrier, modulatorFreq];
+
+    if (lfo) {
+        let lfo = audioCtx.createOscillator();
+        lfo.frequency.value = lfoFreq;
+        let lfoGain = audioCtx.createGain();
+        lfoGain.gain.value = 300;
+        lfo.connect(lfoGain).connect(modulatorFreq.frequency);
+        lfo.start();
+        activeOscillators[note].push(lfo);
+    }
+
+    // attack (keeps total of gain nodes less than 1)
+    let gainNodes = Object.keys(activeGainNodes).length;
+    gainNode.gain.setTargetAtTime(0.8 / gainNodes, note.startTime + offset, 0.1);
+}
+
+// playNoteFM(): plays the note for the current keyboard key with FM synthesis
+function playNoteFM(note) {
+    let modulatorFreq = audioCtx.createOscillator();
+    modulatorFreq.frequency.value = modulatorFrequencyValue;
+
+    let modulationIndex = audioCtx.createGain();
+    modulationIndex.gain.value = modulationIndexValue;
+
+    let carrier = audioCtx.createOscillator();
+    carrier.type = waveform;
+    carrier.frequency.value = midiToFreq(note.pitch);
+
+    modulatorFreq.connect(modulationIndex);
+    modulationIndex.connect(carrier.frequency);
+
+    // create gain node and initialize as 0
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    carrier.connect(gainNode).connect(audioCtx.destination);
+
+    carrier.start();
+    modulatorFreq.start();
+
+    // saves current gain node and oscillator
+    activeGainNodes[note] = [gainNode, modulationIndex];
+    activeOscillators[note] = [carrier, modulatorFreq];
+
+    if (lfo) {
+        let lfo = audioCtx.createOscillator();
+        lfo.frequency.value = lfoFreq;
+        let lfoGain = audioCtx.createGain();
+        lfoGain.gain.value = 300;
+        lfo.connect(lfoGain).connect(modulatorFreq.frequency);
+        lfo.start();
+        activeOscillators[note].push(lfo);
+    }
+
+    // attack (keeps total of gain nodes less than 1)
+    let gainNodes = Object.keys(activeGainNodes).length;
+    gainNode.gain.setTargetAtTime(0.8 / gainNodes, note.startTime + offset, 0.1);
+}
+
+function stopNote(note) {
+    for (let i = 0; i < activeGainNodes[note].length; i++) {
+        activeGainNodes[note][i].gain.cancelScheduledValues(note.endTime + offset - 0.05);
+        activeGainNodes[note][i].gain.setTargetAtTime(0, note.endTime + offset - 0.05, 0.01);
+        delete activeGainNodes[note][i];
+    }
+
+    for (let i = 0; i < activeOscillators[note].length; i++) {
+        activeOscillators[note][i].stop(note.endTime + offset - 0.05 + 0.1);
+        delete activeOscillators[note][i];
+    }
+
+    delete activeGainNodes[note];
+    delete activeOscillators[note];
+}

@@ -1,4 +1,5 @@
 var audioCtx;
+var offset;
 
 // we start by defining some input (not training) data
 TWINKLE_TWINKLE = {
