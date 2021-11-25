@@ -172,7 +172,7 @@ function copyNoteList(noteList) {
         notesCopy.totalTime = note.endTime;
     });
     return notesCopy;
-}ß
+}
 
 function multiplyMatrices(m1, m2) {
     let dim = [m1.length, m2[0].length];
