@@ -1,10 +1,12 @@
+const trainingNotes = TWINKLE_TWINKLE;
 var audioCtx;
 var states;
 var markovChain_order1;
 var markovChain;
-var order = 0;
+var order = 1;
 
 function updateOrder(value) { order = value; };
+function updateTrainingNotes(value) { trainingNotes = blobToNoteSequence(value); }
 
 TWINKLE_TWINKLE = {
     notes: [
@@ -28,18 +30,24 @@ TWINKLE_TWINKLE = {
 
 function makeMarkovChain(noteList) {
     getStates(noteList);
-
-    markovChain_order1 = [];
-
-    
-
-    makeMarkovChainWithOrder();
+    makeMarkovChainOrder1(noteList);
+    makeMarkovChainOrderN();
 }
 
-function makeMarkovChainWithOrder() {
+function makeMarkovChainOrderN() {
     markovChain = math.identity(states.length);
     for (i = 0; i < order; i++) {
         markovChain = math.multiply(markovChain, markovChain_order1);
+    }
+}
+
+function makeMarkovChainOrder1() {
+    markovChain_order1 = [];
+    counts = getNGramCounts(noteList);
+    for (i = 0; i < states.length - 1; i++) {
+        for (j = 0; j < states.length - 1; j++) {
+            markovChain_order1[i][j] = counts.bigram[i][j] / counts.unigram[i];
+        }
     }
 }
 
@@ -61,6 +69,21 @@ function getStates(noteList) {
     });
 }
 
+function getNGramCounts(noteList) {
+    unigram_counts = math.zeros(states.length);
+    bigram_counts = math.zeros(states.length, states.length);
+    i = 0;
+    for (; i < states.length - 1; i++) {
+        curr_note = states[noteList.notes[i]];
+        next_note = states[noteList.notes[i + 1]];
+        unigram_counts[curr_note]++;
+        bigram_counts[curr_note][next_note]++;
+    }
+    curr_note = states[noteList.notes[i]];
+    unigram_counts[curr_note]++;
+    return [unigram: unigram_counts, bigram: bigram_counts]
+}
+
 function genNotes() {
 
 }
@@ -68,6 +91,6 @@ function genNotes() {
 const playButton = document.getElementById("play");
 playButton.addEventListener('click', function () {
     audioCtx = new (window.AudioContext || window.webkitAudioContext);
-    makeMarkovChain(TWINKLE_TWINKLE);
+    makeMarkovChain(trainingNotes);
     genNotes();
 }, false);
