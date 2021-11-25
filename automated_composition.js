@@ -143,31 +143,12 @@ function newNote(noteList) {
 }
 
 function getNextNote(pitch) {
-    probs = markovChain[states[pitch]];
     randomNote = Math.random();
-    note = [0, 0];
-    prob = probs[pointer];
-
-    console.log("Probs:")
-    console.log(prob)
-    console.log(randomNote)
-    console.log("Note:")
-    console.log(note)
-
-    while (prob + probs[note[1]] < randomNote) {
-        if (probs[note[1]] > 0) {
-            prob += probs[note]
-            note[0]++;
-        }
-        note[1]++;
-
-        console.log("Probs:")
-        console.log(prob)
-        console.log(randomNote)
-        console.log("Note:")
-        console.log(note)
+    note = [0, markovChain[states[pitch]][0]];
+    while (note[1] < randomNote) {
+        note[0]++;
+        note[1] += markovChain[states[pitch]][note[0]];
     }
-
     return parseInt(Object.keys(states)[note[0]]);
 }
 
