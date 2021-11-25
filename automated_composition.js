@@ -113,7 +113,7 @@ function getNGramCounts(noteList) {
     }
     curr_note = states[noteList.notes[i].pitch];
     unigram_counts[curr_note]++;
-    return [unigram: unigram_counts, bigram: bigram_counts]
+    return [unigram: unigram_counts, bigram: bigram_counts];
 }
 
 function getNextNote(pitch) {
