@@ -1,37 +1,73 @@
-const trainingNotes = TWINKLE_TWINKLE;
 var audioCtx;
+var osc;
+var gainNode;
+
 var states;
 var markovChain_order1;
 var markovChain;
 var order = 1;
 
-function updateOrder(value) { order = value; };
-function updateTrainingNotes(value) { trainingNotes = blobToNoteSequence(value); }
+var trainingNotes = TWINKLE_TWINKLE;
 
-TWINKLE_TWINKLE = {
-    notes: [
-        { pitch: 60, startTime: 0.0, endTime: 0.5 },
-        { pitch: 60, startTime: 0.5, endTime: 1.0 },
-        { pitch: 67, startTime: 1.0, endTime: 1.5 },
-        { pitch: 67, startTime: 1.5, endTime: 2.0 },
-        { pitch: 69, startTime: 2.0, endTime: 2.5 },
-        { pitch: 69, startTime: 2.5, endTime: 3.0 },
-        { pitch: 67, startTime: 3.0, endTime: 4.0 },
-        { pitch: 65, startTime: 4.0, endTime: 4.5 },
-        { pitch: 65, startTime: 4.5, endTime: 5.0 },
-        { pitch: 64, startTime: 5.0, endTime: 5.5 },
-        { pitch: 64, startTime: 5.5, endTime: 6.0 },
-        { pitch: 62, startTime: 6.0, endTime: 6.5 },
-        { pitch: 62, startTime: 6.5, endTime: 7.0 },
-        { pitch: 60, startTime: 7.0, endTime: 8.0 },
-    ],
-    totalTime: 8
-};
+const playButton = document.getElementById("play");
+playButton.addEventListener('click', function () {
+    setupWebAudio();
+    makeMarkovChain(trainingNotes);
+    let noteList = genNotes();
+    playNotes(noteList);
+}, false);
+
+const resetButton = document.getElementById("reset");
+resetButton.addEventListener('click', function () { trainingNotes = TWINKLE_TWINKLE; }, false);
+
+function playNotes(noteList) {
+    noteList.forEach(note => {
+        playNote(note);
+    });
+}
+
+function genNotes() {
+    var noteList = [{ pitch: 60, startTime: 0, endTime: 0.9 }]
+
+    for (let i = 1; i < 15; i++) {
+        var newNote = JSON.parse(JSON.stringify(noteList[i - 1]));
+        console.log(newNote)
+        if (Math.random() < 0.7) {
+            newNote.pitch += 1;
+        }
+        else {
+            newNote.pitch -= 1;
+        }
+        newNote.startTime += 1;
+        newNote.endTime += 1;
+        const newNoteCopy = newNote;
+        noteList.push(newNoteCopy);
+    }
+    console.log(noteList)
+
+    return noteList;
+}
 
 function makeMarkovChain(noteList) {
     getStates(noteList);
     makeMarkovChainOrder1(noteList);
     makeMarkovChainOrderN();
+}
+
+function setupWebAudio() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext);
+    osc = audioCtx.createOscillator();
+    gainNode = audioCtx.createGain();
+    osc.connect(gainNode).connect(audioCtx.destination);
+    osc.start()
+    gainNode.gain.value = 0;
+}
+
+function playNote(note) {
+    gainNode.gain.setTargetAtTime(1, note.startTime, 0.01)
+    osc.frequency.setTargetAtTime(midiToFreq(note.pitch), note.startTime, 0.001)
+    gainNode.gain.setTargetAtTime(0, note.endTime, 0.01)
+
 }
 
 function makeMarkovChainOrderN() {
@@ -84,13 +120,27 @@ function getNGramCounts(noteList) {
     return [unigram: unigram_counts, bigram: bigram_counts]
 }
 
-function genNotes() {
+function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
 
-}
+function updateOrder(value) { order = value; };
+function updateTrainingNotes(value) { trainingNotes = blobToNoteSequence(value); }
 
-const playButton = document.getElementById("play");
-playButton.addEventListener('click', function () {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext);
-    makeMarkovChain(trainingNotes);
-    genNotes();
-}, false);
+TWINKLE_TWINKLE = {
+    notes: [
+        { pitch: 60, startTime: 0.0, endTime: 0.5 },
+        { pitch: 60, startTime: 0.5, endTime: 1.0 },
+        { pitch: 67, startTime: 1.0, endTime: 1.5 },
+        { pitch: 67, startTime: 1.5, endTime: 2.0 },
+        { pitch: 69, startTime: 2.0, endTime: 2.5 },
+        { pitch: 69, startTime: 2.5, endTime: 3.0 },
+        { pitch: 67, startTime: 3.0, endTime: 4.0 },
+        { pitch: 65, startTime: 4.0, endTime: 4.5 },
+        { pitch: 65, startTime: 4.5, endTime: 5.0 },
+        { pitch: 64, startTime: 5.0, endTime: 5.5 },
+        { pitch: 64, startTime: 5.5, endTime: 6.0 },
+        { pitch: 62, startTime: 6.0, endTime: 6.5 },
+        { pitch: 62, startTime: 6.5, endTime: 7.0 },
+        { pitch: 60, startTime: 7.0, endTime: 8.0 },
+    ],
+    totalTime: 8
+};
