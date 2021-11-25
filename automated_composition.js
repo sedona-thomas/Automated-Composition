@@ -60,8 +60,6 @@ function genNotes(noteList) {
         noteList.notes.push(newNoteCopy);
         noteList.totalTime++;
     }
-
-    console.log(newNotes);
     return noteList;
 }
 
@@ -96,7 +94,6 @@ function makeMarkovChainOrderN() {
 function makeMarkovChainOrder1(noteList) {
     markovChain_order1 = [];
     counts = getNGramCounts(noteList);
-    console.log(counts)
     for (i = 0; i < Object.keys(states).length; i++) {
         for (j = 0; j < Object.keys(states).length; j++) {
             markovChain_order1[i][j] = counts[1][i][j] / counts[0][i];
@@ -109,23 +106,21 @@ function getStates(noteList) {
 
     let pitchSet = [];
     noteList.notes.forEach(note => {
-        if (!pitchSet.includes(note)) {
+        if (!pitchSet.includes(note.pitch)) {
             pitchSet.push(note.pitch);
         }
     });
     pitchSet.sort();
 
-    let i = 0;
-    pitchSet.forEach(pitch => {
-        states[pitch] = i;
-        i++;
-    });
+    for (i = 0; i < pitchSet.length; i++) {
+        states[pitchSet[i]] = i;
+    }
 }
 
 function getNGramCounts(noteList) {
     numOfNotes = Object.keys(states).length;
-    unigram_counts = makeZeroSquareMatrix(numOfNotes, 1);
-    bigram_counts = makeZeroSquareMatrix(numOfNotes, 2);
+    unigram_counts = new Array(numOfNotes).fill(0);
+    bigram_counts = makeZeroSquareMatrix(numOfNotes);
     i = 0;
     for (; i < noteList.notes.length - 1; i++) {
         curr_note = states[noteList.notes[i].pitch];
@@ -152,7 +147,6 @@ function getNextNote(pitch) {
 function copyNoteList(noteList) {
     let notesCopy = { notes: [], totalTime: 0 };
     noteList.forEach(note => {
-        console.log(note);
         notesCopy.notes.push(note);
         notesCopy.totalTime++;
     });
@@ -161,7 +155,6 @@ function copyNoteList(noteList) {
 
 function copyNote(noteList, i) {
     let noteCopy = JSON.parse(JSON.stringify(noteList.notes[i - 1]));
-    console.log(noteCopy);
     return notecopy;
 }
 
@@ -172,26 +165,26 @@ function multiplyMatrices(m1, m2) {
     for (r = 0; r < rows; ++r) {
         for (c = 0; c < cols; ++c) {
             for (i = 0; i < m1[0].length; ++i) {
-                m[r][c] += m1[r][i] * m2[i][c];
+                product[r][c] += m1[r][i] * m2[i][c];
             }
         }
     }
-    return m;
+    return product;
 }
 
-function makeZeroSquareMatrix(size, dimensions) {
+function makeZeroSquareMatrix(size) {
     m = [];
-    for (i = 0; i < dimensions; i++) {
-        row = new Array(size).fill(0);
-        m.push(row);
+    for (i = 0; i < size; i++) {
+        m.push(new Array(size).fill(0));
     }
     return m;
 }
 
-function makeZeroMatrix(n, m) {
+function makeZeroMatrix(n0, n1) {
     m = [];
-    for (i = 0; i < n; i++) {
-        m.push(new Array(m).fill(0);)
+    for (i = 0; i < n0; i++) {
+        row = new Array(n1).fill(0);
+        m.push(row);
     }
     return m;
 }
