@@ -150,8 +150,11 @@ function getNextNote(pitch) {
     console.log(randomNote)
     console.log(markovChain[states[pitch]])
 
-    for (prob = 0; randomNote < prob + markovChain[states[pitch]]; prob += markovChain[states[pitch]]) {
+    console.log(prob + markovChain[note] < randomNote)
+
+    for (prob = 0; prob + markovChain[note] < randomNote; prob += markovChain[note]) {
         console.log(note);
+        console.log(prob + markovChain[note])
         note++;
     }
 
