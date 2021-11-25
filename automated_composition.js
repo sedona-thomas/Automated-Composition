@@ -1,6 +1,5 @@
 var audioCtx;
 var states;
-var transitions;
 var markovChain;
 
 TWINKLE_TWINKLE = {
@@ -23,22 +22,31 @@ TWINKLE_TWINKLE = {
     totalTime: 8
 };
 
-
 function makeMarkovChain(noteList) {
-    states = [];
+    getStates(noteList);
+
     markovChain = [];
-
-    noteList.notes.forEach(note => {
-        if (!states.contains(note)) {
-            states.push(note.pitch);
-        }
-    });
-    states.sort();
-
 
 
 }
 
+function getStates(noteList) {
+    states = {};
+
+    let noteSet = [];
+    noteList.notes.forEach(note => {
+        if (!noteSet.contains(note)) {
+            noteSet.push(note.pitch);
+        }
+    });
+    noteSet.sort();
+
+    let i = 0;
+    noteSet.forEach(note => {
+        states[note] = i;
+        i++;
+    });
+}
 
 function genNotes() {
 
@@ -47,5 +55,6 @@ function genNotes() {
 const playButton = document.getElementById("play");
 playButton.addEventListener('click', function () {
     audioCtx = new (window.AudioContext || window.webkitAudioContext);
+    makeMarkovChain(TWINKLE_TWINKLE);
     genNotes();
 }, false);
