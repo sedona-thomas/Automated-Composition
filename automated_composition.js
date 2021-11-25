@@ -60,10 +60,9 @@ function setupWebAudio() {
 }
 
 function playNote(note) {
-    gainNode.gain.setTargetAtTime(1, note.startTime, 0.01)
-    osc.frequency.setTargetAtTime(midiToFreq(note.pitch), note.startTime, 0.001)
-    gainNode.gain.setTargetAtTime(0, note.endTime, 0.01)
-
+    gainNode.gain.setTargetAtTime(1, note.startTime, 0.01);
+    osc.frequency.setTargetAtTime(midiToFreq(note.pitch), note.startTime, 0.001);
+    gainNode.gain.setTargetAtTime(0, note.endTime, 0.01);
 }
 
 function makeMarkovChainOrderN() {
@@ -78,7 +77,7 @@ function makeMarkovChainOrder1() {
     counts = getNGramCounts(noteList);
     for (i = 0; i < states.length - 1; i++) {
         for (j = 0; j < states.length - 1; j++) {
-            markovChain_order1[i][j] = counts.bigram[i][j] / counts.unigram[i];
+            markovChain_order1[i][j] = counts[1][i][j] / counts[0][i];
         }
     }
 }
@@ -113,7 +112,7 @@ function getNGramCounts(noteList) {
     }
     curr_note = states[noteList.notes[i].pitch];
     unigram_counts[curr_note]++;
-    return [unigram: unigram_counts, bigram: bigram_counts];
+    return [unigram_counts, bigram_counts];
 }
 
 function getNextNote(pitch) {
