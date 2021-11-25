@@ -89,7 +89,7 @@ window.onload = () => {
     }
 
     function makeMarkovChainOrderN() {
-        markovChain = math.identity(states.length);
+        markovChain = math.identity(Object.keys(states).length);
         for (i = 0; i < order; i++) {
             markovChain = math.multiply(markovChain, markovChain_order1);
         }
@@ -98,8 +98,8 @@ window.onload = () => {
     function makeMarkovChainOrder1(noteList) {
         markovChain_order1 = [];
         counts = getNGramCounts(noteList);
-        for (i = 0; i < states.length - 1; i++) {
-            for (j = 0; j < states.length - 1; j++) {
+        for (i = 0; i < Object.keys(states).length - 1; i++) {
+            for (j = 0; j < Object.keys(states).length - 1; j++) {
                 markovChain_order1[i][j] = counts[1][i][j] / counts[0][i];
             }
         }
@@ -124,10 +124,10 @@ window.onload = () => {
     }
 
     function getNGramCounts(noteList) {
-        unigram_counts = math.zeros(states.length);
-        bigram_counts = math.zeros(states.length, states.length);
+        unigram_counts = math.zeros(Object.keys(states).length);
+        bigram_counts = math.zeros(Object.keys(states).length, Object.keys(states).length);
         i = 0;
-        for (; i < states.length - 1; i++) {
+        for (; i < Object.keys(states).length - 1; i++) {
             curr_note = states[noteList.notes[i].pitch];
             next_note = states[noteList.notes[i + 1].pitch];
             unigram_counts[curr_note]++;
