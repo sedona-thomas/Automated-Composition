@@ -43,22 +43,21 @@ const resetButton = document.getElementById("reset");
 resetButton.addEventListener('click', function () { trainingNotes = TWINKLE_TWINKLE; }, false);
 
 function playNotes(noteList) {
-    noteList.forEach(note => {
+    noteList.notes.forEach(note => {
         playNote(note);
     });
 }
 
 function genNotes(noteList) {
     let newNotes = copyNoteList(noteList);
-
-    for (let i = newNotes.length; i < newNotes.notes.length + SEQUENCE_LENGTH; i++) {
+    for (i = newNotes.notes.length; i < newNotes.notes.length + SEQUENCE_LENGTH; i++) {
         let newNote = copyNote(newNotes, i);
         newNote.pitch = getNextNote(newNote.pitch);
         newNote.startTime = newNote.endTime;
         newNote.endTime = newNote.startTime + NOTE_LENGTH;
         const newNoteCopy = newNote;
-        noteList.notes.push(newNoteCopy);
-        noteList.totalTime++;
+        newNotes.notes.push(newNoteCopy);
+        newNotes.totalTime = newNoteCopy.endTime;
     }
     return noteList;
 }
@@ -92,10 +91,11 @@ function makeMarkovChainOrderN() {
 }
 
 function makeMarkovChainOrder1(noteList) {
-    markovChain_order1 = [];
+    numOfNotes = Object.keys(states).length;
+    markovChain_order1 = makeZeroSquareMatrix(numOfNotes, numOfNotes);
     counts = getNGramCounts(noteList);
-    for (i = 0; i < Object.keys(states).length; i++) {
-        for (j = 0; j < Object.keys(states).length; j++) {
+    for (i = 0; i < numOfNotes; i++) {
+        for (j = 0; j < numOfNotes; j++) {
             markovChain_order1[i][j] = counts[1][i][j] / counts[0][i];
         }
     }
@@ -120,7 +120,7 @@ function getStates(noteList) {
 function getNGramCounts(noteList) {
     numOfNotes = Object.keys(states).length;
     unigram_counts = new Array(numOfNotes).fill(0);
-    bigram_counts = makeZeroSquareMatrix(numOfNotes);
+    bigram_counts = makeZeroMatrix(numOfNotes, numOfNotes);
     i = 0;
     for (; i < noteList.notes.length - 1; i++) {
         curr_note = states[noteList.notes[i].pitch];
@@ -135,49 +135,38 @@ function getNGramCounts(noteList) {
 
 function getNextNote(pitch) {
     randomNote = Math.random();
-    probSum = 0;
-    currNote = 0;
-    while (probSum + markovChain[states[pitch]] < randomNote) {
-        probSum += markovChain[states[pitch]];
-        currNote++;
+    note = 0;
+    while (prob = 0; prob + markovChain[states[pitch]] < randomNote; prob += markovChain[states[pitch]]) {
+        note++;
     }
-    return Object.keys(states)[currNote];
+    return parseInt(Object.keys(states)[note]);
 }
 
 function copyNoteList(noteList) {
     let notesCopy = { notes: [], totalTime: 0 };
-    noteList.forEach(note => {
+    noteList.notes.forEach(note => {
         notesCopy.notes.push(note);
-        notesCopy.totalTime++;
+        notesCopy.totalTime = note.endTime;
     });
     return notesCopy;
 }
 
 function copyNote(noteList, i) {
     let noteCopy = JSON.parse(JSON.stringify(noteList.notes[i - 1]));
-    return notecopy;
+    return noteCopy;
 }
 
 function multiplyMatrices(m1, m2) {
-    let rows = m1.length;
-    let cols = m2[0].length;
-    let product = makeZeroSquareMatrix(rows, cols);
-    for (r = 0; r < rows; ++r) {
-        for (c = 0; c < cols; ++c) {
+    let dim = [m1.length, m2[0].length];
+    let product = makeZeroMatrix(dim[0], dim[1]);
+    for (r = 0; r < dim[0]; ++r) {
+        for (c = 0; c < dim[1]; ++c) {
             for (i = 0; i < m1[0].length; ++i) {
                 product[r][c] += m1[r][i] * m2[i][c];
             }
         }
     }
     return product;
-}
-
-function makeZeroSquareMatrix(size) {
-    m = [];
-    for (i = 0; i < size; i++) {
-        m.push(new Array(size).fill(0));
-    }
-    return m;
 }
 
 function makeZeroMatrix(n0, n1) {
@@ -190,14 +179,13 @@ function makeZeroMatrix(n0, n1) {
 }
 
 function makeIdentityMatrix(size) {
-    m = makeZeroSquareMatrix(size, 2);
+    m = makeZeroMatrix(size, size);
     for (i = 0; i < size; i++) {
         m[i][i] = 1;
     }
     return m;
 }
 
-function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
-
 function updateOrder(value) { order = value; };
 function updateTrainingNotes(value) { trainingNotes = blobToNoteSequence(value); }
+function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
