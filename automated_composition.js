@@ -1,6 +1,10 @@
 var audioCtx;
 var states;
+var markovChain_order1;
 var markovChain;
+var order = 0;
+
+function updateOrder(value) { order = value; };
 
 TWINKLE_TWINKLE = {
     notes: [
@@ -25,9 +29,18 @@ TWINKLE_TWINKLE = {
 function makeMarkovChain(noteList) {
     getStates(noteList);
 
-    markovChain = [];
+    markovChain_order1 = [];
 
+    
 
+    makeMarkovChainWithOrder();
+}
+
+function makeMarkovChainWithOrder() {
+    markovChain = math.identity(states.length);
+    for (i = 0; i < order; i++) {
+        markovChain = math.multiply(markovChain, markovChain_order1);
+    }
 }
 
 function getStates(noteList) {
