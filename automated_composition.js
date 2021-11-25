@@ -1,13 +1,3 @@
-var audioCtx;
-var osc;
-var gainNode;
-var offset = 1;
-
-var states;
-var markovChain_order1;
-var markovChain;
-var order = 1;
-
 TWINKLE_TWINKLE = {
     notes: [
         { pitch: 60, startTime: 0.0, endTime: 0.5 },
@@ -32,63 +22,46 @@ var trainingNotes = TWINKLE_TWINKLE;
 const SEQUENCE_LENGTH = 15;
 const NOTE_LENGTH = 1;
 
-let activeOscillators = {}
-let activeGainNodes = {}
-let mode = 'single';
-let waveform = 'sine';
-let lfo = false;
+var markovChain;
+var markovChain_order1;
+var states;
+var order = 1;
 
-let numberOfPartials = 5;
-let partialDistance = 15;
-let modulatorFrequencyValue = 100;
-let modulationIndexValue = 100;
-let lfoFreq = 2;
+var audioCtx;
+var activeOscillators = {}
+var activeGainNodes = {}
+var offset = 1;
+var mode = 'single';
+var waveform = 'sine';
+var lfo = false;
+var numberOfPartials = 5;
+var partialDistance = 15;
+var modulatorFrequencyValue = 100;
+var modulationIndexValue = 100;
+var lfoFreq = 2;
+
+function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
+
+function updateOrder(value) { order = value; };
+function updateTrainingNotes(value) { trainingNotes = blobToNoteSequence(value); }
+function updatePartialNum(value) { numberOfPartials = value; };
+function updatePartialDistance(value) { partialSize = value; };
+function updateFreq(value) { modulatorFrequencyValue = value; };
+function updateIndex(value) { modulationIndexValue = value; };
+function updateLfo(value) { lfoFreq = value; };
 
 const playButton = document.getElementById("play");
 playButton.addEventListener('click', function () {
-    setUpWebAudio();
-    makeMarkovChain(trainingNotes);
-    let noteList = genNotes(trainingNotes);
-    playNotes(noteList);
-}, false);
-
-const resetButton = document.getElementById("reset");
-resetButton.addEventListener('click', function () { trainingNotes = TWINKLE_TWINKLE; }, false);
-
-function playNotes(noteList) {
-    noteList.notes.forEach(note => {
-        playNote(note);
-    });
-    console.log(noteList);
-}
-
-function genNotes(noteList) {
-    let newNotes = copyNoteList(noteList);
-    let sequenceEnd = newNotes.notes.length + SEQUENCE_LENGTH;
-    for (i = newNotes.notes.length; i < sequenceEnd; i++) {
-        const newNoteCopy = newNote(newNotes);
-        newNotes.notes.push(newNoteCopy);
-        newNotes.totalTime = newNoteCopy.endTime;
-    }
-    return newNotes;
-}
-
-function makeMarkovChain(noteList) {
-    getStates(noteList);
-    makeMarkovChainOrder1(noteList);
-    makeMarkovChainOrderN();
-}
-
-function setUpWebAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext);
-        // osc = audioCtx.createOscillator();
-        // gainNode = audioCtx.createGain();
-        // osc.connect(gainNode).connect(audioCtx.destination);
-        // osc.start();
-        // gainNode.gain.value = 0;
     }
-}
+    makeMarkovChain(trainingNotes);
+    let song = genNotes(trainingNotes);
+    song.notes.forEach(note => {
+        playNote(note);
+    });
+    console.log(song);
+}, false);
 
 function playNote(note) {
     if (mode == "single") {
@@ -109,12 +82,22 @@ function playNote(note) {
     }
 }
 
-// function playNote(note) {
-//     gainNode.gain.setTargetAtTime(1, note.startTime, 0.01);
-//     osc.frequency.setTargetAtTime(midiToFreq(note.pitch), note.startTime, 0.001);
-//     space = (0.01 < note.endTime - note.startTime) ? 0.01 : note.endTime - note.startTime / 5;
-//     gainNode.gain.setTargetAtTime(0, note.endTime - space, 0.01);
-// }
+function genNotes(noteList) {
+    let newNotes = copyNoteList(noteList);
+    let sequenceEnd = newNotes.notes.length + SEQUENCE_LENGTH;
+    for (i = newNotes.notes.length; i < sequenceEnd; i++) {
+        const newNoteCopy = newNote(newNotes);
+        newNotes.notes.push(newNoteCopy);
+        newNotes.totalTime = newNoteCopy.endTime;
+    }
+    return newNotes;
+}
+
+function makeMarkovChain(noteList) {
+    getStates(noteList);
+    makeMarkovChainOrder1(noteList);
+    makeMarkovChainOrderN();
+}
 
 function makeMarkovChainOrderN() {
     markovChain = makeIdentityMatrix(Object.keys(states).length);
@@ -136,7 +119,6 @@ function makeMarkovChainOrder1(noteList) {
 
 function getStates(noteList) {
     states = {};
-
     let pitchSet = [];
     noteList.notes.forEach(note => {
         if (!pitchSet.includes(note.pitch)) {
@@ -144,7 +126,6 @@ function getStates(noteList) {
         }
     });
     pitchSet.sort();
-
     for (i = 0; i < pitchSet.length; i++) {
         states[pitchSet[i]] = i;
     }
@@ -167,7 +148,7 @@ function getNGramCounts(noteList) {
 }
 
 function newNote(noteList) {
-    let newNote = copyNote(noteList, i);
+    let newNote = JSON.parse(JSON.stringify(noteList.notes[i - 1]));
     newNote.pitch = getNextNote(newNote.pitch);
     newNote.startTime = newNote.endTime;
     newNote.endTime = newNote.startTime + NOTE_LENGTH;
@@ -191,12 +172,7 @@ function copyNoteList(noteList) {
         notesCopy.totalTime = note.endTime;
     });
     return notesCopy;
-}
-
-function copyNote(noteList, i) {
-    let noteCopy = JSON.parse(JSON.stringify(noteList.notes[i - 1]));
-    return noteCopy;
-}
+}ß
 
 function multiplyMatrices(m1, m2) {
     let dim = [m1.length, m2[0].length];
@@ -228,17 +204,9 @@ function makeIdentityMatrix(size) {
     return m;
 }
 
-function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
+const resetButton = document.getElementById("reset");
+resetButton.addEventListener('click', function () { trainingNotes = TWINKLE_TWINKLE; }, false);
 
-function updateOrder(value) { order = value; };
-function updateTrainingNotes(value) { trainingNotes = blobToNoteSequence(value); }
-function updatePartialNum(value) { numberOfPartials = value; };
-function updatePartialDistance(value) { partialSize = value; };
-function updateFreq(value) { modulatorFrequencyValue = value; };
-function updateIndex(value) { modulationIndexValue = value; };
-function updateLfo(value) { lfoFreq = value; };
-
-// buttons to switch modes
 const singleButton = document.getElementById("single");
 singleButton.addEventListener('click', function () { mode = 'single'; }, false);
 const additiveButton = document.getElementById("additive");
@@ -248,7 +216,6 @@ AMButton.addEventListener('click', function () { mode = 'am'; }, false);
 const FMButton = document.getElementById("fm");
 FMButton.addEventListener('click', function () { mode = 'fm'; }, false);
 
-// buttons to switch between each waveform
 const sineButton = document.getElementById("sine");
 sineButton.addEventListener('click', function () { waveform = 'sine'; }, false);
 const sawtoothButton = document.getElementById("sawtooth");
@@ -258,7 +225,6 @@ squareButton.addEventListener('click', function () { waveform = 'square'; }, fal
 const triangleButton = document.getElementById("triangle");
 triangleButton.addEventListener('click', function () { waveform = 'triangle'; }, false);
 
-// buttons to turn on and off lfo
 const lfoOnButton = document.getElementById("lfoOn");
 lfoOnButton.addEventListener('click', function () { lfo = true; }, false);
 const lfoOffButton = document.getElementById("lfoOff");
