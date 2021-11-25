@@ -1,3 +1,5 @@
+import { blobToNoteSequence } from "core/midi_io";
+
 TWINKLE_TWINKLE = {
     notes: [
         { pitch: 60, startTime: 0.0, endTime: 0.5 },
@@ -19,8 +21,8 @@ TWINKLE_TWINKLE = {
 };
 
 var trainingNotes = TWINKLE_TWINKLE;
-const SEQUENCE_LENGTH = 15;
-const NOTE_LENGTH = 1;
+const SEQUENCE_LENGTH = 20;
+const NOTE_LENGTH = 0.5;
 
 var markovChain;
 var markovChain_order1;
@@ -52,9 +54,7 @@ function updateLfo(value) { lfoFreq = value; };
 
 const playButton = document.getElementById("play");
 playButton.addEventListener('click', function () {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext);
-    }
+    audioCtx = new (window.AudioContext || window.webkitAudioContext);
     makeMarkovChain(trainingNotes);
     let song = genNotes(trainingNotes);
     song.notes.forEach(note => {
