@@ -7,9 +7,31 @@ var markovChain_order1;
 var markovChain;
 var order = 1;
 
+TWINKLE_TWINKLE = {
+    notes: [
+        { pitch: 60, startTime: 0.0, endTime: 0.5 },
+        { pitch: 60, startTime: 0.5, endTime: 1.0 },
+        { pitch: 67, startTime: 1.0, endTime: 1.5 },
+        { pitch: 67, startTime: 1.5, endTime: 2.0 },
+        { pitch: 69, startTime: 2.0, endTime: 2.5 },
+        { pitch: 69, startTime: 2.5, endTime: 3.0 },
+        { pitch: 67, startTime: 3.0, endTime: 4.0 },
+        { pitch: 65, startTime: 4.0, endTime: 4.5 },
+        { pitch: 65, startTime: 4.5, endTime: 5.0 },
+        { pitch: 64, startTime: 5.0, endTime: 5.5 },
+        { pitch: 64, startTime: 5.5, endTime: 6.0 },
+        { pitch: 62, startTime: 6.0, endTime: 6.5 },
+        { pitch: 62, startTime: 6.5, endTime: 7.0 },
+        { pitch: 60, startTime: 7.0, endTime: 8.0 },
+    ],
+    totalTime: 8
+};
+
 var trainingNotes = TWINKLE_TWINKLE;
-const SEQUENCE_LENGTH = newNotes.length;
+const SEQUENCE_LENGTH = 15;
 const NOTE_LENGTH = 1;
+
+
 
 const playButton = document.getElementById("play");
 playButton.addEventListener('click', function () {
@@ -72,7 +94,7 @@ function makeMarkovChainOrderN() {
     }
 }
 
-function makeMarkovChainOrder1() {
+function makeMarkovChainOrder1(noteList) {
     markovChain_order1 = [];
     counts = getNGramCounts(noteList);
     for (i = 0; i < states.length - 1; i++) {
@@ -87,7 +109,7 @@ function getStates(noteList) {
 
     let pitchSet = [];
     noteList.notes.forEach(note => {
-        if (!pitchSet.contains(note)) {
+        if (!pitchSet.includes(note)) {
             pitchSet.push(note.pitch);
         }
     });
@@ -145,23 +167,3 @@ function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
 
 function updateOrder(value) { order = value; };
 function updateTrainingNotes(value) { trainingNotes = blobToNoteSequence(value); }
-
-TWINKLE_TWINKLE = {
-    notes: [
-        { pitch: 60, startTime: 0.0, endTime: 0.5 },
-        { pitch: 60, startTime: 0.5, endTime: 1.0 },
-        { pitch: 67, startTime: 1.0, endTime: 1.5 },
-        { pitch: 67, startTime: 1.5, endTime: 2.0 },
-        { pitch: 69, startTime: 2.0, endTime: 2.5 },
-        { pitch: 69, startTime: 2.5, endTime: 3.0 },
-        { pitch: 67, startTime: 3.0, endTime: 4.0 },
-        { pitch: 65, startTime: 4.0, endTime: 4.5 },
-        { pitch: 65, startTime: 4.5, endTime: 5.0 },
-        { pitch: 64, startTime: 5.0, endTime: 5.5 },
-        { pitch: 64, startTime: 5.5, endTime: 6.0 },
-        { pitch: 62, startTime: 6.0, endTime: 6.5 },
-        { pitch: 62, startTime: 6.5, endTime: 7.0 },
-        { pitch: 60, startTime: 7.0, endTime: 8.0 },
-    ],
-    totalTime: 8
-};
