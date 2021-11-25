@@ -51,11 +51,7 @@ function playNotes(noteList) {
 function genNotes(noteList) {
     let newNotes = copyNoteList(noteList);
     for (i = newNotes.notes.length; i < newNotes.notes.length + SEQUENCE_LENGTH; i++) {
-        let newNote = copyNote(newNotes, i);
-        newNote.pitch = getNextNote(newNote.pitch);
-        newNote.startTime = newNote.endTime;
-        newNote.endTime = newNote.startTime + NOTE_LENGTH;
-        const newNoteCopy = newNote;
+        const newNoteCopy = newNote(newNotes);
         newNotes.notes.push(newNoteCopy);
         newNotes.totalTime = newNoteCopy.endTime;
     }
@@ -92,7 +88,7 @@ function makeMarkovChainOrderN() {
 
 function makeMarkovChainOrder1(noteList) {
     numOfNotes = Object.keys(states).length;
-    markovChain_order1 = makeZeroSquareMatrix(numOfNotes, numOfNotes);
+    markovChain_order1 = makeZeroMatrix(numOfNotes, numOfNotes);
     counts = getNGramCounts(noteList);
     for (i = 0; i < numOfNotes; i++) {
         for (j = 0; j < numOfNotes; j++) {
@@ -121,22 +117,30 @@ function getNGramCounts(noteList) {
     numOfNotes = Object.keys(states).length;
     unigram_counts = new Array(numOfNotes).fill(0);
     bigram_counts = makeZeroMatrix(numOfNotes, numOfNotes);
-    i = 0;
-    for (; i < noteList.notes.length - 1; i++) {
-        curr_note = states[noteList.notes[i].pitch];
-        next_note = states[noteList.notes[i + 1].pitch];
-        unigram_counts[curr_note]++;
-        bigram_counts[curr_note][next_note]++;
+    let i;
+    for (i = 0; i < noteList.notes.length - 1; i++) {
+        bigram = [states[noteList.notes[i].pitch], states[noteList.notes[i + 1].pitch]];
+        unigram_counts[bigram[0]]++;
+        bigram_counts[bigram[0]][bigram[1]]++;
     }
-    curr_note = states[noteList.notes[i].pitch];
-    unigram_counts[curr_note]++;
+    if (noteList.notes.length > 0) {
+        unigram_counts[noteList.notes[i].pitch]++;
+    }
     return [unigram_counts, bigram_counts];
+}
+
+function newNote(noteList) {
+    let newNote = copyNote(noteList, i);
+    newNote.pitch = getNextNote(newNote.pitch);
+    newNote.startTime = newNote.endTime;
+    newNote.endTime = newNote.startTime + NOTE_LENGTH;
+    return newNote;
 }
 
 function getNextNote(pitch) {
     randomNote = Math.random();
     note = 0;
-    while (prob = 0; prob + markovChain[states[pitch]] < randomNote; prob += markovChain[states[pitch]]) {
+    for (prob = 0; prob + markovChain[states[pitch]] < randomNote; prob += markovChain[states[pitch]]) {
         note++;
     }
     return parseInt(Object.keys(states)[note]);
