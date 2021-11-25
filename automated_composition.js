@@ -33,7 +33,7 @@ const NOTE_LENGTH = 1;
 
 const playButton = document.getElementById("play");
 playButton.addEventListener('click', function () {
-    setupWebAudio();
+    setUpWebAudio();
     makeMarkovChain(trainingNotes);
     let noteList = genNotes(trainingNotes);
     playNotes(noteList);
@@ -46,16 +46,18 @@ function playNotes(noteList) {
     noteList.notes.forEach(note => {
         playNote(note);
     });
+    console.log(noteList);
 }
 
 function genNotes(noteList) {
     let newNotes = copyNoteList(noteList);
-    for (i = newNotes.notes.length; i < newNotes.notes.length + SEQUENCE_LENGTH; i++) {
+    let sequenceEnd = newNotes.notes.length + SEQUENCE_LENGTH;
+    for (i = newNotes.notes.length; i < sequenceEnd; i++) {
         const newNoteCopy = newNote(newNotes);
         newNotes.notes.push(newNoteCopy);
         newNotes.totalTime = newNoteCopy.endTime;
     }
-    return noteList;
+    return newNotes;
 }
 
 function makeMarkovChain(noteList) {
@@ -64,19 +66,22 @@ function makeMarkovChain(noteList) {
     makeMarkovChainOrderN();
 }
 
-function setupWebAudio() {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext);
-    osc = audioCtx.createOscillator();
-    gainNode = audioCtx.createGain();
-    osc.connect(gainNode).connect(audioCtx.destination);
-    osc.start()
-    gainNode.gain.value = 0;
+function setUpWebAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext);
+        osc = audioCtx.createOscillator();
+        gainNode = audioCtx.createGain();
+        osc.connect(gainNode).connect(audioCtx.destination);
+        osc.start();
+        gainNode.gain.value = 0;
+    }
 }
 
 function playNote(note) {
     gainNode.gain.setTargetAtTime(1, note.startTime, 0.01);
     osc.frequency.setTargetAtTime(midiToFreq(note.pitch), note.startTime, 0.001);
-    gainNode.gain.setTargetAtTime(0, note.endTime, 0.01);
+    space = (0.01 < note.endTime - note.startTime) ? 0.01 : note.endTime - note.startTime / 5;
+    gainNode.gain.setTargetAtTime(0, note.endTime - space, 0.01);
 }
 
 function makeMarkovChainOrderN() {
@@ -140,9 +145,19 @@ function newNote(noteList) {
 function getNextNote(pitch) {
     randomNote = Math.random();
     note = 0;
-    for (prob = 0; prob + markovChain[states[pitch]] < randomNote; prob += markovChain[states[pitch]]) {
+
+    console.log("next")
+    console.log(randomNote)
+    console.log(markovChain[states[pitch]])
+
+    for (prob = 0; randomNote < prob + markovChain[states[pitch]]; prob += markovChain[states[pitch]]) {
+        console.log(note);
         note++;
     }
+
+
+    console.log(note)
+
     return parseInt(Object.keys(states)[note]);
 }
 
