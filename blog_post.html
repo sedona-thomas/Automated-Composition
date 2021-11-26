@@ -1,9 +1,48 @@
-<h1>Automated Composition with Markov Models</h1>
+<h1>Automated Composition with Markov Chains</h1>
 
-<p>Author: Sedona Thomas</p>
+<h4>Sedona Thomas</h4>
 
 <p>
-    This program automatically composes a tune from an input tune. By default, 
-    it plays Twinkle Twinkle Little Star, but it also accepts a sequence of 
-    notes and note length from the user. 
+    This program automatically composes a tune from an input tune. By default,
+    it plays Twinkle Twinkle Little Star, but it also accepts a sequence of
+    notes, a note length, and a sequence length from the user. To start, users
+    can click the play button or input a tune before clicking play.
+</p>
+
+<h2>How It Works</h2>
+
+<p>
+    Markov Chains are a way to model patterns in the changes from one state to
+    another. This program uses calculates the probability that a given note will
+    be followed by every other note, order n steps away. Once the linklihood of
+    each transition from one note to the next is calculated, the model randomly
+    generates future notes based on those probabilities and adds them to the end
+    of the input tune.
+</p>
+
+<h2>Design Process</h2>
+
+<p>
+    I began by designing a Markov Chain for Twinkle Twinkle Little Star and ensured
+    that all of the transitions properly selected a random note, weighted by the
+    occurrance probabilities. Then, I added the digital synthesizer on top of the
+    Markov Chain output. Finally, I added inputs for the user to define their own
+    tunes (note sequence, note length, and generated sequence length).
+</p>
+
+<h2>Future Improvements</h2>
+
+<p>
+    I attempted to add MIDI file functionality to the program, but I ran into some
+    issues importing the blobToNoteSequence function. Regardless, I designed the
+    program to easily allow for future MIDI inputs by simply updating the current
+    training data variable (same process as user inputted note sequences).
+</p>
+
+<h2>Try It Out!</h2>
+
+<p>
+    Input a sequence of notes and note length, or just hit play. You can also
+    choose from various modes of the digital synthesizer by adjusting the
+    available parameters before hitting play.
 </p>

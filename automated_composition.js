@@ -19,7 +19,7 @@ TWINKLE_TWINKLE = {
 };
 
 var trainingNotes = TWINKLE_TWINKLE;
-const SEQUENCE_LENGTH = 20;
+var sequence_length = 20;
 var note_length = 0.5;
 
 var markovChain;
@@ -82,7 +82,7 @@ function playNote(note) {
 
 function genNotes(noteList) {
     let newNotes = copyNoteList(noteList);
-    let sequenceEnd = newNotes.notes.length + SEQUENCE_LENGTH;
+    let sequenceEnd = newNotes.notes.length + sequence_length;
     for (i = newNotes.notes.length; i < sequenceEnd; i++) {
         const newNoteCopy = newNote(newNotes);
         newNotes.notes.push(newNoteCopy);
@@ -206,14 +206,12 @@ function playNoteSingle(note) {
     const gainNode = audioCtx.createGain();
     gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
 
-    // create oscillator and connect to gain node
     const osc = audioCtx.createOscillator();
     osc.frequency.setValueAtTime(midiToFreq(note.pitch), audioCtx.currentTime);
     osc.type = waveform;
     osc.connect(gainNode).connect(audioCtx.destination);
     osc.start();
 
-    // saves current gain node and oscillator
     activeGainNodes[note] = [gainNode];
     activeOscillators[note] = [osc];
 
@@ -227,22 +225,18 @@ function playNoteSingle(note) {
         activeOscillators[note].push(lfo);
     }
 
-    // attack (keeps total of gain nodes less than 1)
     let gainNodes = Object.keys(activeGainNodes).length;
     gainNode.gain.setTargetAtTime(0.8 / gainNodes, note.startTime + offset, 0.01);
 }
 
 function playNoteAdditive(note) {
-    // saves current gain node and oscillator
     activeGainNodes[note] = [];
     activeOscillators[note] = [];
 
     for (let i = 0; i < numberOfPartials; i++) {
-        // create gain node and initialize as 0
         const gainNode = audioCtx.createGain();
         gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
 
-        // create oscillator and connect to gain node
         const osc = audioCtx.createOscillator();
         let freq = midiToFreq(note.pitch) * (i + 1);
         freq += ((i % 2) * -1) * (i + 1) * partialDistance * Math.random();
@@ -264,7 +258,6 @@ function playNoteAdditive(note) {
         }
     }
 
-    // attack (keeps total of gain nodes less than 1)
     let gainNodes = Object.keys(activeGainNodes).length * numberOfPartials;
     for (let i = 0; i < activeGainNodes[note].length; i++) {
         activeGainNodes[note][i].gain.setTargetAtTime(0.8 / gainNodes, note.startTime + offset, 0.1);
@@ -283,7 +276,6 @@ function playNoteAM(note) {
     depth.gain.value = 0.5; //scale modulator output to [-0.5, 0.5]
     modulated.gain.value = 1.0 - depth.gain.value; //a fixed value of 0.5
 
-    // create gain node and initialize as 0
     const gainNode = audioCtx.createGain();
     gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
 
@@ -294,7 +286,6 @@ function playNoteAM(note) {
     carrier.start();
     modulatorFreq.start();
 
-    // saves current gain node and oscillator
     activeGainNodes[note] = [gainNode, modulated, depth];
     activeOscillators[note] = [carrier, modulatorFreq];
 
@@ -308,12 +299,10 @@ function playNoteAM(note) {
         activeOscillators[note].push(lfo);
     }
 
-    // attack (keeps total of gain nodes less than 1)
     let gainNodes = Object.keys(activeGainNodes).length;
     gainNode.gain.setTargetAtTime(0.8 / gainNodes, note.startTime + offset, 0.1);
 }
 
-// playNoteFM(): plays the note for the current keyboard key with FM synthesis
 function playNoteFM(note) {
     let modulatorFreq = audioCtx.createOscillator();
     modulatorFreq.frequency.value = modulatorFrequencyValue;
@@ -328,7 +317,6 @@ function playNoteFM(note) {
     modulatorFreq.connect(modulationIndex);
     modulationIndex.connect(carrier.frequency);
 
-    // create gain node and initialize as 0
     const gainNode = audioCtx.createGain();
     gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
     carrier.connect(gainNode).connect(audioCtx.destination);
@@ -336,7 +324,6 @@ function playNoteFM(note) {
     carrier.start();
     modulatorFreq.start();
 
-    // saves current gain node and oscillator
     activeGainNodes[note] = [gainNode, modulationIndex];
     activeOscillators[note] = [carrier, modulatorFreq];
 
@@ -350,7 +337,6 @@ function playNoteFM(note) {
         activeOscillators[note].push(lfo);
     }
 
-    // attack (keeps total of gain nodes less than 1)
     let gainNodes = Object.keys(activeGainNodes).length;
     gainNode.gain.setTargetAtTime(0.8 / gainNodes, note.startTime + offset, 0.1);
 }
@@ -399,6 +385,11 @@ notesButton.addEventListener('click', function () {
 const lengthButton = document.getElementById("submit_length");
 lengthButton.addEventListener('click', function () {
     note_length = parseInt(document.getElementById('length').value);
+}, false);
+
+const seqLengthButton = document.getElementById("submit_seq_length");
+seqLengthButton.addEventListener('click', function () {
+    sequence_length = parseInt(document.getElementById('seq_length').value);
 }, false);
 
 const singleButton = document.getElementById("single");
