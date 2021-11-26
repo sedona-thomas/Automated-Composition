@@ -1,5 +1,3 @@
-import { blobToNoteSequence } from "core/midi_io";
-
 TWINKLE_TWINKLE = {
     notes: [
         { pitch: 60, startTime: 0.0, endTime: 0.5 },
@@ -45,7 +43,7 @@ var lfoFreq = 2;
 function midiToFreq(m) { return Math.pow(2, (m - 69) / 12) * 440; }
 
 function updateOrder(value) { order = value; };
-function updateTrainingNotes(value) { trainingNotes = blobToNoteSequence(value); }
+function updateTrainingNotes(file) { trainingNotes = blobToNoteSequence(file); }
 function updatePartialNum(value) { numberOfPartials = value; };
 function updatePartialDistance(value) { partialSize = value; };
 function updateFreq(value) { modulatorFrequencyValue = value; };
