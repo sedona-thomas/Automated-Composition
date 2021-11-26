@@ -16,6 +16,17 @@
 
         <button id="play">Play Sequence</button>
 
+        <button id="reset">Reset to Twinkle Twinkle Little Star</button>
+
+        <p>Input Note Number Sequence Separated by Space (Default: Twikle Twinkle Little Star)</p>
+        <p>Example: "60 62 64"</p>
+        <input type="text" id="notes">
+        <button id="submit_notes">Submit</button>
+
+        <p>Input Note Length in Seconds (Default: 0.5)</p>
+        <input type="text" id="length">
+        <button id="submit_length">Submit</button>
+
         <p>Order of Markov Chain</p>
         <input id="order" type="range" min=1 max=10 value=1 oninput="updateOrder(this.value)"></input>
 
