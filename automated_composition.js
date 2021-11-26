@@ -398,7 +398,7 @@ notesButton.addEventListener('click', function () {
 
 const lengthButton = document.getElementById("submit_length");
 lengthButton.addEventListener('click', function () {
-    noteLength = parseInt(document.getElementById('length').value);
+    note_length = parseInt(document.getElementById('length').value);
 }, false);
 
 const singleButton = document.getElementById("single");
