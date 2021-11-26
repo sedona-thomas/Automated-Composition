@@ -202,9 +202,6 @@ function makeIdentityMatrix(size) {
     return m;
 }
 
-const resetButton = document.getElementById("reset");
-resetButton.addEventListener('click', function () { trainingNotes = TWINKLE_TWINKLE; }, false);
-
 const singleButton = document.getElementById("single");
 singleButton.addEventListener('click', function () { mode = 'single'; }, false);
 const additiveButton = document.getElementById("additive");
