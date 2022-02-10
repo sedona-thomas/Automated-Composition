@@ -1,6 +1,3 @@
-# Automated-Composition
-Webpage for automated composition (implemented in Web Audio)
-
 <h1>Automated Composition with Markov Chains</h1>
 
 <h4>Sedona Thomas</h4>
